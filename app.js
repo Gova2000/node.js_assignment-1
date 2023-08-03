@@ -171,116 +171,39 @@ const checkRequestsBody = (request, response, next) => {
 
 //get based on path queries
 
-const hashStatus = (request1) => {
-  return request1.status !== undefined;
-};
-const hashPriority = (request1) => {
-  return request1.priority !== undefined;
-};
-const hashPriorityANDStatus = (request1) => {
-  return (request1.priority !== undefined) & (request1.status !== undefined);
-};
-const hashCategoryANDStatus = (request1) => {
-  return (request1.category !== undefined) & (request1.status !== undefined);
-};
-const hashCategory = (request1) => {
-  return request1.category !== undefined;
-};
-const hashCategoryANDPriority = (request1) => {
-  return (request1.category !== undefined) & (request1.priority !== undefined);
-};
-
 app.get("/todos/", InvalidResponses, async (request, response) => {
-  const { status, category, priority, search_q = "" } = request.query;
-  let query = "";
-  switch (true) {
-    case hashStatus(request.query):
-      query = `
-    SELECT*
-    FROM
-    todo
-    WHERE
-    todo LIKE '${search_q}'
-    AND status='${status}'
-    ;`;
-      break;
-    case hashPriority(request.query):
-      query = `
-            SELECT*
-            FROM
+  const { status = "", search_q = "", priority = "", category = "" } = request;
+  console.log(status, search_q, priority, category);
+  const getTodosQuery = `
+        SELECT 
+            id,
+            todo,
+            priority,
+            status,
+            category,
+            due_date AS dueDate 
+        FROM 
             todo
-            WHERE
-            todo LIKE '${search_q}'
-            AND priority='${priority}'
-            ;`;
-      break;
+        WHERE 
+        todo LIKE '%${search_q}%' AND priority LIKE '%${priority}%' 
+        AND status LIKE '%${status}%' AND category LIKE '%${category}%';`;
 
-    case hashPriorityANDStatus(request.query):
-      query = `
-            SELECT*
-            FROM
-            todo
-            WHERE
-            title LIKE '${search_q}'
-            AND priority='${priority}'
-            AND status='${status}'
-            ;`;
-      break;
-
-    case hashCategoryANDStatus(request.query):
-      query = `
-            SELECT*
-            FROM
-            todo
-            WHERE
-            todo LIKE '${search_q}'
-            AND category='${category}'
-            AND status='${status}'
-            ;`;
-      break;
-
-    case hashCategory(request.query):
-      query = `
-            SELECT*
-            FROM
-            todo
-            WHERE
-            todo LIKE '${search_q}'
-            AND category='${category}'
-            ;`;
-      break;
-
-    case hashCategoryANDPriority(request.query):
-      query = `
-            SELECT*
-            FROM
-            todo
-            WHERE
-            todo LIKE '${search_q}'
-            AND category='${category}'
-            AND priority='${priority}'
-            ;`;
-      break;
-    default:
-      query = `
-        select*
-        from 
-        todo
-        where 
-        todo LIKE '%${search_q}%';`;
-
-      break;
-  }
-
-  const get = await db.all(query);
-  response.send(get);
+  const todosArray = await db.all(getTodosQuery);
+  response.send(todosArray);
 });
 
 //get based on ID
 app.get("/todos/:todoId/", InvalidResponses, async (request, response) => {
   const { todoId } = request.params;
   const apps = `
-    SELECT*FROM
+    SELECT
+    id,
+    todo,
+    priority,
+    status,
+    category,
+    due_date AS dueDate 
+    FROM
     todo
     WHERE id=${todoId};`;
   const ap = await db.get(apps);
@@ -288,15 +211,28 @@ app.get("/todos/:todoId/", InvalidResponses, async (request, response) => {
 });
 
 //get based on date
-app.get("/agenda/", async (request, response) => {
+app.get("/agenda/", InvalidResponses, async (request, response) => {
   const { date } = request.query;
   const apps = `
-    SELECT*FROM
+    SELECT
+    id,
+    todo,
+    priority,
+    status,
+    category,
+    due_date AS dueDate 
+    FROM
     todo
     WHERE 
     due_date=${date};`;
+
   const ap = await db.get(apps);
-  response.send(ap);
+  if (ap === undefined) {
+    response.status(400);
+    response.send("Invalid Due Date");
+  } else {
+    response.send(ap);
+  }
 });
 
 //add todo
@@ -322,6 +258,7 @@ app.post("/todos/", checkRequestsBody, async (request, response) => {
 app.put("/todos/:todoId/", checkRequestsBody, async (request, response) => {
   const { todoId } = request.params;
   const reBody = request.body;
+  const { id, todo, priority, status, category, dueDate } = reBody;
   let updateCol = "";
   switch (true) {
     case reBody.status !== undefined:
@@ -340,20 +277,7 @@ app.put("/todos/:todoId/", checkRequestsBody, async (request, response) => {
       updateCol = "dueDate";
       break;
   }
-  const reqQuery = `
-    select*
-    from 
-    todo 
-    where 
-    id=${todoId};`;
-  const Run = await db.get(reqQuery);
-  const {
-    todo = Run.todo,
-    priority = Run.priority,
-    status = Run.status,
-    category = Run.category,
-    dueDate = Run.due_date,
-  } = reBody;
+
   const upDate = `
     UPDATE
     todo
