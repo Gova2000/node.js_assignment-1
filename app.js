@@ -26,7 +26,7 @@ const initialize = async () => {
 initialize();
 
 const InvalidResponses = async (request, response, next) => {
-  const { search_q, category, status, priority, date } = request.body;
+  const { search_q, category, status, priority, date } = request.query;
   const { todoId } = request.params;
   if (category !== undefined) {
     const cateArray = ["WORK", "HOME", "LEARNING"];
@@ -226,7 +226,7 @@ app.get("/agenda/", InvalidResponses, async (request, response) => {
     WHERE 
     due_date=${date};`;
 
-  const ap = await db.get(apps);
+  const ap = await db.all(apps);
   if (ap === undefined) {
     response.status(400);
     response.send("Invalid Due Date");
@@ -249,7 +249,7 @@ app.post("/todos/", checkRequestsBody, async (request, response) => {
         '${status}',
         '${category}',
         ${dueDate}
-    )`;
+    );`;
   await db.run(addTodo);
   response.send("Todo Successfully Added");
 });
@@ -262,19 +262,19 @@ app.put("/todos/:todoId/", checkRequestsBody, async (request, response) => {
   let updateCol = "";
   switch (true) {
     case reBody.status !== undefined:
-      updateCol = "status";
+      updateCol = "Status";
       break;
     case reBody.priority !== undefined:
-      updateCol = "priority";
+      updateCol = "Priority";
       break;
     case reBody.todo !== undefined:
-      updateCol = "todo";
+      updateCol = "Todo";
       break;
     case reBody.category !== undefined:
-      updateCol = "category";
+      updateCol = "Category";
       break;
     case reBody.due_date !== undefined:
-      updateCol = "dueDate";
+      updateCol = "Due Date";
       break;
   }
 
