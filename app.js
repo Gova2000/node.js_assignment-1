@@ -68,7 +68,7 @@ const InvalidResponses = async (request, response, next) => {
     try {
       const myDate = new Date(date);
 
-      const formatedDate = format(new Date(date), "yyyy-MM-dd");
+      const formattedDate = format(new Date(date), "yyyy-MM-dd");
 
       const result = toDate(
         new Date(
@@ -79,7 +79,7 @@ const InvalidResponses = async (request, response, next) => {
       const isValidDate = await isValid(result);
 
       if (isValidDate === true) {
-        request.date = formatedDate;
+        request.date = formattedDate;
       } else {
         response.status(400);
         response.send("Invalid Due Date");
@@ -211,9 +211,16 @@ app.get("/todos/:todoId/", InvalidResponses, async (request, response) => {
 });
 
 //get based on date
-app.get("/agenda/", InvalidResponses, async (request, response) => {
+app.get("/agenda/", async (request, response) => {
   const { date } = request.query;
-  const apps = `
+  if (date === undefined) {
+    response.status(400);
+    response.send("Invalid Due Date");
+  } else {
+    const isDated = isValid(new Date(date));
+    if (isDated) {
+      const formatted = format(new Date(date), "YYYY-MM-dd");
+      const apps = `
     SELECT
     id,
     todo,
@@ -224,14 +231,14 @@ app.get("/agenda/", InvalidResponses, async (request, response) => {
     FROM
     todo
     WHERE 
-    due_date=${date};`;
+    due_date=${formatted};`;
 
-  const ap = await db.all(apps);
-  if (ap === undefined) {
-    response.status(400);
-    response.send("Invalid Due Date");
-  } else {
-    response.send(ap);
+      const ap = await db.all(apps);
+      response.send(ap);
+    } else {
+      response.status(400);
+      response.send("Invalid Due Date");
+    }
   }
 });
 
