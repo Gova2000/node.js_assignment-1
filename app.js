@@ -219,7 +219,7 @@ app.get("/agenda/", async (request, response) => {
   } else {
     const isDated = isValid(new Date(date));
     if (isDated) {
-      const formatted = format(new Date(date), "YYYY-MM-dd");
+      const formatted = format(new Date(date), "yyyy-MM-dd");
       const apps = `
     SELECT
     id,
@@ -231,7 +231,7 @@ app.get("/agenda/", async (request, response) => {
     FROM
     todo
     WHERE 
-    due_date=${formatted};`;
+    due_date='${formatted}';`;
 
       const ap = await db.all(apps);
       response.send(ap);
@@ -266,38 +266,69 @@ app.put("/todos/:todoId/", checkRequestsBody, async (request, response) => {
   const { todoId } = request.params;
   const reBody = request.body;
   const { id, todo, priority, status, category, dueDate } = reBody;
-  let updateCol = "";
+  let updateTodoQuery = "";
   switch (true) {
-    case reBody.status !== undefined:
-      updateCol = "Status";
+    case status !== undefined:
+      updateTodoQuery = `
+            UPDATE
+                todo
+            SET 
+                status = '${status}'
+            WHERE 
+                id = ${todoId}     
+        ;`;
+      await db.run(updateTodoQuery);
+      response.send("Status Updated");
       break;
-    case reBody.priority !== undefined:
-      updateCol = "Priority";
+    case priority !== undefined:
+      updateTodoQuery = `
+            UPDATE
+                todo
+            SET 
+                priority = '${priority}'
+            WHERE 
+                id = ${todoId}     
+        ;`;
+      await db.run(updateTodoQuery);
+      response.send("Priority Updated");
       break;
-    case reBody.todo !== undefined:
-      updateCol = "Todo";
+    case todo !== undefined:
+      updateTodoQuery = `
+            UPDATE
+                todo
+            SET 
+                todo = '${todo}'
+            WHERE 
+                id = ${todoId}     
+        ;`;
+      await db.run(updateTodoQuery);
+      response.send("Todo Updated");
       break;
-    case reBody.category !== undefined:
-      updateCol = "Category";
+    case category !== undefined:
+      const updateCategoryQuery = `
+            UPDATE
+                todo
+            SET 
+                category = '${category}'
+            WHERE 
+                id = ${todoId}     
+        ;`;
+      await db.run(updateCategoryQuery);
+      response.send("Category Updated");
       break;
-    case reBody.due_date !== undefined:
-      updateCol = "Due Date";
+    case dueDate !== undefined:
+      const updateDateQuery = `
+            UPDATE
+                todo
+            SET 
+                due_date = '${dueDate}'
+            WHERE 
+                id = ${todoId}     
+        ;`;
+      await db.run(updateDateQuery);
+      response.send("Due Date Updated");
       break;
   }
-
-  const upDate = `
-    UPDATE
-    todo
-    SET
-    todo='${todo}',
-    priority='${priority}',
-    status='${status}',
-    category='${category}',
-    due_date=${dueDate}
-    WHERE
-    id=${todoId}`;
-  await db.run(upDate);
-  response.send(`${updateCol} Updated`);
 });
 
 //get based on ID
