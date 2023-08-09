@@ -245,6 +245,7 @@ app.get("/agenda/", async (request, response) => {
 //add todo
 app.post("/todos/", checkRequestsBody, async (request, response) => {
   const { id, todo, priority, status, category, dueDate } = request.body;
+  Date1 = format(new Date(dueDate), "yyyy-MM-dd");
   const addTodo = `
     INSERT INTO
     todo(id,todo,priority,status,category,due_date)
@@ -255,7 +256,7 @@ app.post("/todos/", checkRequestsBody, async (request, response) => {
         '${priority}',
         '${status}',
         '${category}',
-        ${dueDate}
+        ${Date1}
     );`;
   await db.run(addTodo);
   response.send("Todo Successfully Added");
